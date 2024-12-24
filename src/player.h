@@ -1,7 +1,7 @@
 #ifndef PLAYER
 #define PLAYER
 
-typedef struct player
+typedef struct _player
 {
     int helath;
     int pos_X;

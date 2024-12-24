@@ -7,6 +7,7 @@
 // Includes ------------------------------------------------------------------------
 #include "raylib.h"
 #include "player.h"
+#include "bullet.h"
 // ---------------------------------------------------------------------------------
 
 // Defines--------------------------------------------------------------------------
@@ -20,11 +21,14 @@ const char *title = "Test";
 
 player Player = (player){200, 30, 30, 50, 15};
 const Color Player_color = GREEN;
+
+bullet Bullet = (bullet){0, 0, 5, 10, 0};
 //----------------------------------------------------------------------------------
 
 // Local Functions Declaration------------------------------------------------------
 void DrawFrame(const int screenWidth, const int screenHeight);
 void UpdatePlayerPosition(player *Player, const int screenWidth);
+void UpdateBullet(const int screenHeight, bullet *Bullet, player *Player);
 //----------------------------------------------------------------------------------
 
 // Main entry point--------------------------------------------------------------------------
@@ -41,6 +45,7 @@ int main()
     {
         DrawFrame(screenWidth, screenHeight);
         UpdatePlayerPosition(&Player, screenWidth);
+        UpdateBullet(screenHeight, &Bullet, &Player);
         DrawFPS(0, 0);
     }
 
@@ -68,11 +73,34 @@ void UpdatePlayerPosition(player *Player, const int screenWidth)
 {
     if (IsKeyDown(KEY_RIGHT) && Player->pos_X < screenWidth - (2 * Player->width))
     {
-        Player->pos_X += 10;
+        Player->pos_X += 6;
     }
     if (IsKeyDown(KEY_LEFT) && Player->pos_X > Player->width)
     {
-        Player->pos_X -= 10;
+        Player->pos_X -= 6;
     }
+}
+
+void UpdateBullet(const int screenHeight, bullet *Bullet, player *Player)
+{
+    // Initializing bullet on space press
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        Bullet->pos_X = Player->pos_X + (Player->width / 2) - (Bullet->width / 2);
+        Bullet->pos_Y = screenHeight - (Player->pos_y + Player->height + 5);
+        Bullet->state = 1;
+    }
+    // Checking if bullet is out of frame or updating bullet position
+    if (Bullet->pos_X > screenHeight + Bullet->height && Bullet->state == 1)
+    {
+        Bullet->state = 0;
+        return;
+    }
+    else if (Bullet->state == 1)
+    {
+        Bullet->pos_Y -= 2;
+    }
+    // Drawing bullet
+    DrawRectangle(Bullet->pos_X, Bullet->pos_Y, Bullet->width, Bullet->height, RED);
 }
 //----------------------------------------------------------------------------------
