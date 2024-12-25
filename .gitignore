@@ -1,6 +1,7 @@
 *.exe
 *.code-workspace
 .obj/*
+*.o
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
