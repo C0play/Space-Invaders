@@ -21,7 +21,7 @@
 #define PlayerMagazineSize 5
 
 #define InvadersPerRow 14
-#define Rows 5
+#define Rows 1
 #define InvaderWidth 35
 #define InvaderHeight 20
 #define EnemyMagazineSize 10
@@ -218,9 +218,9 @@ void UpdateInvader()
 
 void UpdateEnemyBullet()
 {
-    // Picking random invader to shot a bullet
-    int randomInvaderIndex = 0;
-    while (Invaders[randomInvaderIndex].state == 0)
+    // Picking random invader to shoot a bullet
+    int randomInvaderIndex = GetRandomValue(0, (Rows * InvadersPerRow) - 1);
+    while (Invaders[randomInvaderIndex].state == 0 && invaderCount > 0)
         randomInvaderIndex = GetRandomValue(0, (Rows * InvadersPerRow) - 1);
 
     // Initializing bullet every "BulletSpawnRate" seconds
