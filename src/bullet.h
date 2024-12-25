@@ -5,8 +5,8 @@ typedef struct _bullet
 {
     int state;
 
-    int pos_X;
-    int pos_Y;
+    int pos_x;
+    int pos_y;
 
     int width;
     int height;

@@ -14,15 +14,17 @@
 // Defines--------------------------------------------------------------------------
 #define NEARBLACK (Color){26, 26, 26, 255}
 
-#define PlayerSpeed 6
+#define PlayerSpeed 5
 
-#define MagazineSize 30
+#define PlayerMagazineSize 30
+#define EnemyMagazineSize 10
 #define BulletSpeed 4
 
 #define InvadersPerRow 14
 #define Rows 5
 #define InvaderWidth 35
 #define InvaderHeight 20
+#define BulletSpawnRate 0.5
 //----------------------------------------------------------------------------------
 
 // Local Variables Definition (local to this module)--------------------------------
@@ -31,9 +33,10 @@ const int screenHeight = 1000;
 const char *title = "Test";
 
 player Player = (player){200, 30, 50, 75, 20};
-const Color Player_color = GREEN;
 
-bullet Bullets[MagazineSize];
+bullet PlayerBullets[PlayerMagazineSize];
+bullet EnemyBullets[EnemyMagazineSize];
+double lastTimeCheck = 0.0;
 
 invader Invaders[InvadersPerRow * Rows];
 //----------------------------------------------------------------------------------
@@ -41,15 +44,17 @@ invader Invaders[InvadersPerRow * Rows];
 // Local Functions Declaration------------------------------------------------------
 void DrawFrame(const int screenWidth, const int screenHeight);
 void UpdatePlayerPosition(player *Player, const int screenWidth);
-void UpdateBullet(bullet Bullets[], player *Player, const int screenHeight);
-void UpdateInvader(invader *Invaders, bullet *Bullets);
+void UpdatePlayerBullet(bullet PlayerBullets[], player *Player, const int screenHeight);
+void UpdateInvader(invader *Invaders, bullet *PlayerBullets);
+void UpdateEnemyBullet(invader *Invaders);
 //----------------------------------------------------------------------------------
 
 // Main entry point--------------------------------------------------------------------------
 int main()
 {
     // --------------------------------------- START ----------------------------------------
-    bullet_init(Bullets, MagazineSize);
+    bullet_init(EnemyBullets, EnemyMagazineSize);
+    bullet_init(PlayerBullets, PlayerMagazineSize);
     invader_init(Invaders, InvadersPerRow, Rows, InvaderWidth, InvaderHeight, screenWidth);
 
     TraceLog(LOG_INFO, "Padding: %d", (screenWidth - (InvadersPerRow * InvaderWidth)) / (InvadersPerRow + 1));
@@ -64,8 +69,9 @@ int main()
     {
         DrawFrame(screenWidth, screenHeight);
         UpdatePlayerPosition(&Player, screenWidth);
-        UpdateBullet(Bullets, &Player, screenHeight);
-        UpdateInvader(Invaders, Bullets);
+        UpdatePlayerBullet(PlayerBullets, &Player, screenHeight);
+        UpdateInvader(Invaders, PlayerBullets);
+        UpdateEnemyBullet(Invaders);
         DrawFPS(screenWidth - 30, screenHeight - 35);
     }
 
@@ -86,13 +92,13 @@ void DrawFrame(const int screenWidth, const int screenHeight)
     ClearBackground(NEARBLACK);
 
     // Drawing player
-    DrawRectangle(Player.pos_X, screenHeight - Player.pos_y, Player.width, Player.height, Player_color);
+    DrawRectangle(Player.pos_x, screenHeight - Player.pos_y, Player.width, Player.height, BLUE);
 
-    // Drawing bullet
-    for (int i = 0; i < MagazineSize; i++)
+    // Drawing player bullets
+    for (int i = 0; i < PlayerMagazineSize; i++)
     {
-        if (Bullets[i].state == 1)
-            DrawRectangle(Bullets[i].pos_X, Bullets[i].pos_Y, Bullets[i].width, Bullets[i].height, RED);
+        if (PlayerBullets[i].state == 1)
+            DrawRectangle(PlayerBullets[i].pos_x, PlayerBullets[i].pos_y, PlayerBullets[i].width, PlayerBullets[i].height, GREEN);
     }
 
     // Drawing invaders
@@ -100,8 +106,15 @@ void DrawFrame(const int screenWidth, const int screenHeight)
     {
         if (Invaders[i].state)
         {
-            DrawRectangle(Invaders[i].pos_X, Invaders[i].pos_Y, Invaders[i].width, Invaders[i].height, ORANGE);
+            DrawRectangle(Invaders[i].pos_x, Invaders[i].pos_y, Invaders[i].width, Invaders[i].height, ORANGE);
         }
+    }
+
+    // Drawing enemy bullets
+    for (int i = 0; i < EnemyMagazineSize; i++)
+    {
+        if (EnemyBullets[i].state == 1)
+            DrawRectangle(EnemyBullets[i].pos_x, EnemyBullets[i].pos_y, EnemyBullets[i].width, EnemyBullets[i].height, RED);
     }
 
     EndDrawing();
@@ -109,68 +122,105 @@ void DrawFrame(const int screenWidth, const int screenHeight)
 
 void UpdatePlayerPosition(player *Player, const int screenWidth)
 {
-    if (IsKeyDown(KEY_RIGHT) && Player->pos_X < screenWidth - (Player->width + 10))
+    if (IsKeyDown(KEY_RIGHT) && Player->pos_x < screenWidth - (Player->width + 10))
     {
-        Player->pos_X += PlayerSpeed;
+        Player->pos_x += PlayerSpeed;
     }
 
-    if (IsKeyDown(KEY_LEFT) && Player->pos_X > 10)
+    if (IsKeyDown(KEY_LEFT) && Player->pos_x > 10)
     {
-        Player->pos_X -= PlayerSpeed;
+        Player->pos_x -= PlayerSpeed;
     }
 }
 
-void UpdateBullet(bullet Bullets[], player *Player, const int screenHeight)
+void UpdatePlayerBullet(bullet PlayerBullets[], player *Player, const int screenHeight)
 {
     // Initializing bullet on space press
     if (IsKeyPressed(KEY_SPACE))
     {
         int i = 0;
-        while (Bullets[i].state == 1 && i < MagazineSize)
+        while (PlayerBullets[i].state == 1 && i < PlayerMagazineSize)
         {
             i++;
         }
 
-        Bullets[i].pos_X = Player->pos_X + (Player->width / 2) - (Bullets[i].width / 2);
-        Bullets[i].pos_Y = screenHeight - (Player->pos_y + Player->height + 5);
-        Bullets[i].state = 1;
+        PlayerBullets[i].pos_x = Player->pos_x + (Player->width / 2) - (PlayerBullets[i].width / 2);
+        PlayerBullets[i].pos_y = screenHeight - (Player->pos_y + Player->height + 5);
+        PlayerBullets[i].state = 1;
     }
     // Checking if bullet is out of frame or updating bullet position
-    for (int k = 0; k < MagazineSize; k++)
+    for (int k = 0; k < PlayerMagazineSize; k++)
     {
-        if (Bullets[k].state == 1 && Bullets[k].pos_Y < 0 - Bullets[k].height)
+        if (PlayerBullets[k].state == 1 && PlayerBullets[k].pos_y < 0 - PlayerBullets[k].height)
         {
-            Bullets[k].state = 0;
+            PlayerBullets[k].state = 0;
         }
 
-        if (Bullets[k].state == 1)
+        if (PlayerBullets[k].state == 1)
         {
-            Bullets[k].pos_Y -= BulletSpeed;
+            PlayerBullets[k].pos_y -= BulletSpeed;
         }
     }
 }
 
-void UpdateInvader(invader *Invaders, bullet *Bullets)
+void UpdateInvader(invader *Invaders, bullet *PlayerBullets)
 {
 
-    for (int i = 0; i < MagazineSize; i++)
+    for (int i = 0; i < PlayerMagazineSize; i++)
     {
         for (int j = 0; j < InvadersPerRow * Rows; j++)
         {
             // Check only if both bullets and invader are active
-            if (Invaders[j].state == 1 && Bullets[i].state == 1)
+            if (Invaders[j].state == 1 && PlayerBullets[i].state == 1)
             {
                 // Check if x coordinates match
-                if (Bullets[i].pos_X >= Invaders[j].pos_X - Bullets[i].width && Bullets[i].pos_X <= Invaders[j].pos_X + Invaders[j].width)
+                if (PlayerBullets[i].pos_x >= Invaders[j].pos_x - PlayerBullets[i].width && PlayerBullets[i].pos_x <= Invaders[j].pos_x + Invaders[j].width)
                 {
                     // Check if y coordinates match
-                    if (Bullets[i].pos_Y >= Invaders[j].pos_Y && Bullets[i].pos_Y <= Invaders[j].pos_Y + Invaders[j].height)
+                    if (PlayerBullets[i].pos_y >= Invaders[j].pos_y && PlayerBullets[i].pos_y <= Invaders[j].pos_y + Invaders[j].height)
                     {
                         Invaders[j].state = 0;
-                        Bullets[i].state = 0;
+                        PlayerBullets[i].state = 0;
                     }
                 }
             }
+        }
+    }
+}
+
+void UpdateEnemyBullet(invader *Invaders)
+{
+    int randomInvaderIndex = GetRandomValue(0, (Rows * InvadersPerRow) - 1);
+
+    double elapsedTime = GetTime();
+
+    // Initializing bullet every 1 second
+    if (elapsedTime - lastTimeCheck >= BulletSpawnRate)
+    {
+        TraceLog(LOG_INFO, "Elapsed time: %lf", elapsedTime - lastTimeCheck);
+        lastTimeCheck = elapsedTime;
+
+        int i = 0;
+        while (EnemyBullets[i].state == 1 && i < EnemyMagazineSize)
+        {
+            i++;
+        }
+
+        EnemyBullets[i].pos_x = Invaders[randomInvaderIndex].pos_x + (InvaderWidth / 2) - (EnemyBullets[i].width / 2);
+        EnemyBullets[i].pos_y = (Invaders[randomInvaderIndex].pos_y + InvaderHeight);
+        EnemyBullets[i].state = 1;
+    }
+    // Checking if bullet is out of frame or updating bullet position
+    for (int k = 0; k < PlayerMagazineSize; k++)
+    {
+        if (EnemyBullets[k].state == 1 && EnemyBullets[k].pos_y > screenHeight + EnemyBullets[k].height)
+        {
+            EnemyBullets[k].state = 0;
+        }
+
+        if (EnemyBullets[k].state == 1)
+        {
+            EnemyBullets[k].pos_y += BulletSpeed;
         }
     }
 }

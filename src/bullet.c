@@ -6,10 +6,10 @@ void bullet_init(bullet Bullets[], int size)
     {
         Bullets[i].state = 0;
 
-        Bullets[i].pos_X = 100;
-        Bullets[i].pos_Y = 100;
+        Bullets[i].pos_x = 100;
+        Bullets[i].pos_y = 100;
 
-        Bullets[i].width = 5;
-        Bullets[i].height = 10;
+        Bullets[i].width = 10;
+        Bullets[i].height = 15;
     }
 }
