@@ -4,6 +4,7 @@
 typedef struct _player
 {
     int helath;
+    
     int pos_x;
     int pos_y;
 
