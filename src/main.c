@@ -12,6 +12,7 @@
 
 // Defines--------------------------------------------------------------------------
 #define NEARBLACK (Color){26, 26, 26, 255}
+#define MagazineSize 30
 //----------------------------------------------------------------------------------
 
 // Local Variables Definition (local to this module)--------------------------------
@@ -22,19 +23,20 @@ const char *title = "Test";
 player Player = (player){200, 30, 30, 50, 15};
 const Color Player_color = GREEN;
 
-bullet Bullet = (bullet){0, 0, 5, 10, 0};
+bullet Bullets[MagazineSize];
 //----------------------------------------------------------------------------------
 
 // Local Functions Declaration------------------------------------------------------
 void DrawFrame(const int screenWidth, const int screenHeight);
 void UpdatePlayerPosition(player *Player, const int screenWidth);
-void UpdateBullet(const int screenHeight, bullet *Bullet, player *Player);
+void UpdateBullet(const int screenHeight, bullet Bullets[], player *Player);
 //----------------------------------------------------------------------------------
 
 // Main entry point--------------------------------------------------------------------------
 int main()
 {
     // --------------------------------------- START ----------------------------------------
+    bullet_init(Bullets, MagazineSize);
     InitWindow(screenWidth, screenHeight, title);
 
     SetTraceLogLevel(LOG_ALL); // For debugging purposes
@@ -45,7 +47,7 @@ int main()
     {
         DrawFrame(screenWidth, screenHeight);
         UpdatePlayerPosition(&Player, screenWidth);
-        UpdateBullet(screenHeight, &Bullet, &Player);
+        UpdateBullet(screenHeight, Bullets, &Player);
         DrawFPS(0, 0);
     }
 
@@ -62,7 +64,7 @@ void DrawFrame(const int screenWidth, const int screenHeight)
 
     ClearBackground(NEARBLACK);
 
-    int unused_variable __attribute__((unused)) = screenWidth;
+    int unused_variable __attribute__((unused)) = screenWidth; // To get rid of unused variable warning
 
     DrawRectangle(Player.pos_X, screenHeight - Player.pos_y, Player.width, Player.height, Player_color);
 
@@ -75,32 +77,47 @@ void UpdatePlayerPosition(player *Player, const int screenWidth)
     {
         Player->pos_X += 6;
     }
+
     if (IsKeyDown(KEY_LEFT) && Player->pos_X > Player->width)
     {
         Player->pos_X -= 6;
     }
 }
 
-void UpdateBullet(const int screenHeight, bullet *Bullet, player *Player)
+void UpdateBullet(const int screenHeight, bullet Bullets[], player *Player)
 {
     // Initializing bullet on space press
     if (IsKeyPressed(KEY_SPACE))
     {
-        Bullet->pos_X = Player->pos_X + (Player->width / 2) - (Bullet->width / 2);
-        Bullet->pos_Y = screenHeight - (Player->pos_y + Player->height + 5);
-        Bullet->state = 1;
+        int i = 0;
+        while (Bullets[i].state == 1 && i < MagazineSize)
+        {
+            i++;
+        }
+
+        Bullets[i].pos_X = Player->pos_X + (Player->width / 2) - (Bullets[i].width / 2);
+        Bullets[i].pos_Y = screenHeight - (Player->pos_y + Player->height + 5);
+        Bullets[i].state = 1;
     }
     // Checking if bullet is out of frame or updating bullet position
-    if (Bullet->pos_X > screenHeight + Bullet->height && Bullet->state == 1)
+    for (int k = 0; k < MagazineSize; k++)
     {
-        Bullet->state = 0;
-        return;
+        if (Bullets[k].state == 1 && Bullets[k].pos_Y < 0 - Bullets[k].height)
+        {
+            Bullets[k].state = 0;
+        }
+
+        if (Bullets[k].state == 1)
+        {
+            Bullets[k].pos_Y -= 2;
+        }
     }
-    else if (Bullet->state == 1)
-    {
-        Bullet->pos_Y -= 2;
-    }
+
     // Drawing bullet
-    DrawRectangle(Bullet->pos_X, Bullet->pos_Y, Bullet->width, Bullet->height, RED);
+    for (int k = 0; k < MagazineSize; k++)
+    {
+        if (Bullets[k].state == 1)
+            DrawRectangle(Bullets[k].pos_X, Bullets[k].pos_Y, Bullets[k].width, Bullets[k].height, RED);
+    }
 }
 //----------------------------------------------------------------------------------
