@@ -21,13 +21,13 @@
 #define PlayerMagazineSize 5
 
 #define InvadersPerRow 14
-#define Rows 1
+#define Rows 3
 #define InvaderWidth 35
 #define InvaderHeight 20
 #define EnemyMagazineSize 10
 
-#define BulletSpawnRate 0.5
-#define BulletSpeed 4
+#define BulletSpawnRate 0.8
+#define BulletSpeed 3
 //----------------------------------------------------------------------------------
 
 // Local Variables Definition (local to this module)--------------------------------
@@ -66,7 +66,7 @@ int main()
 
     InitWindow(screenWidth, screenHeight, title);
 
-    SetTraceLogLevel(LOG_ALL); // For debugging purposes
+    // SetTraceLogLevel(LOG_ALL); // For debugging purposes
     SetTargetFPS(144);         // Set our game to run at 144 frames-per-second
 
     // Main game loop------------------------------------------------------------------------
